@@ -46,7 +46,7 @@ export default function Home() {
       <div className="flex w-full max-w-3xl flex-col gap-10">
         <div className="flex flex-col gap-3 text-center sm:text-left">
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Compatibility App
+            궁합 탐지기
           </h1>
           <p className="text-base text-zinc-600 dark:text-zinc-400">
             간단한 진단으로 나와 상대를 더 잘 이해해보세요.

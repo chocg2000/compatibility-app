@@ -32,7 +32,7 @@ export default function SiteHeader() {
           href="/"
           className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
         >
-          Compatibility App
+          궁합 탐지기
         </Link>
         <nav className="flex items-center gap-1">
           {NAV_ITEMS.map((item) => {

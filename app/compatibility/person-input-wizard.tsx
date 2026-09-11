@@ -9,6 +9,8 @@ import {
   type UserProfile,
 } from "@/lib/profile/user-profile";
 import type { MbtiPole, MbtiTypeCode } from "@/lib/mbti/types";
+import type { MbtiResult } from "@/lib/mbti/scoring";
+import MbtiQuizForm from "@/app/mbti/mbti-quiz-form";
 import { calculateOhengDistribution, calculateSaju, calculateSipseong } from "@/lib/saju";
 import { analyzeFaceGeometry } from "@/lib/gwansang/analyzer";
 import { extractFaceLandmarks, getImageData, loadImageFromFile } from "@/lib/gwansang/face-landmarker";
@@ -119,6 +121,43 @@ function MbtiPicker({ onSubmit }: { onSubmit: (type: MbtiTypeCode) => void }) {
   );
 }
 
+function MbtiStep({ onComplete }: { onComplete: (result: MbtiResult) => void }) {
+  const [mode, setMode] = useState<"pick" | "quiz">("pick");
+
+  if (mode === "quiz") {
+    return (
+      <div className="flex flex-col gap-4">
+        {/* MbtiQuizForm은 /mbti의 밝은 배경을 전제로 한 색상(zinc-900 텍스트 등)을 쓰므로,
+            이 페이지의 먹색 테마 카드 위에 그대로 놓으면 글자가 거의 안 보인다. 원래
+            디자인이 기대하는 밝은 배경으로 감싸서 대비를 맞춘다. */}
+        <div className="rounded-2xl bg-zinc-50 p-4 sm:p-6">
+          <MbtiQuizForm onSubmit={onComplete} />
+        </div>
+        <button
+          type="button"
+          onClick={() => setMode("pick")}
+          className="self-start text-xs text-[var(--saju-text-muted)] hover:underline"
+        >
+          ← 유형을 알고 있어요, 직접 선택할게요
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <MbtiPicker onSubmit={(type) => onComplete(buildMbtiResultFromType(type))} />
+      <button
+        type="button"
+        onClick={() => setMode("quiz")}
+        className="self-start text-xs text-[var(--saju-accent)] hover:underline"
+      >
+        MBTI를 몰라요, 24문항 테스트할게요
+      </button>
+    </div>
+  );
+}
+
 function buildJawonDistribution(characters: HanjaJawonOheng[]): JawonOhengDistribution {
   const distribution: JawonOhengDistribution = { 목: 0, 화: 0, 토: 0, 금: 0, 수: 0 };
   for (const character of characters) {
@@ -213,9 +252,7 @@ export default function PersonInputWizard({ profile, updateProfile }: PersonInpu
       </p>
 
       {currentStep === "mbti" && (
-        <MbtiPicker
-          onSubmit={(type) => updateProfile((current) => setMbtiData(current, buildMbtiResultFromType(type)))}
-        />
+        <MbtiStep onComplete={(result) => updateProfile((current) => setMbtiData(current, result))} />
       )}
 
       {currentStep === "saju" && (
