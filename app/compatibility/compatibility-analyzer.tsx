@@ -44,7 +44,7 @@ function ResetConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; on
 }
 
 export default function CompatibilityAnalyzer() {
-  const { profile: myProfile, updateProfile: updateMyProfile } = useUserProfile();
+  const { profile: myProfile, updateProfile: updateMyProfileReal } = useUserProfile();
   const [partnerProfile, setPartnerProfile] = useState<UserProfile>(emptyProfile);
   const [result, setResult] = useState<OverallCompatibilityResult | null>(null);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
@@ -52,12 +52,28 @@ export default function CompatibilityAnalyzer() {
   // 비우는 것만으로는 위저드 내부의 임시 UI 상태(예: 아직 분석 전인 업로드
   // 사진 파일)까지는 지워지지 않기 때문이다.
   const [resetCount, setResetCount] = useState(0);
+  // "나의 프로필"은 실제 localStorage에 저장된(useUserProfile) 값이라 리셋했다고
+  // 그 값을 지울 수는 없다. 대신 리셋 시점에 빈 draft를 만들어 위저드의 "몇 단계인지"
+  // 판단만 이 draft 기준으로 하고, 실제 저장은 계속 updateMyProfileReal로 진행한다.
+  // draft가 다시 4단계 모두 채워지면(=완료) null로 돌려 실제 프로필을 그대로 신뢰한다.
+  const [myProfileDraft, setMyProfileDraft] = useState<UserProfile | null>(null);
+
+  const myProfileForWizard = myProfileDraft ?? myProfile;
+
+  function updateMyProfile(updater: (current: UserProfile) => UserProfile) {
+    updateMyProfileReal(updater);
+    setMyProfileDraft((current) => {
+      if (!current) return current;
+      const next = updater(current);
+      return isProfileComplete(next) ? null : next;
+    });
+  }
 
   function updatePartnerProfile(updater: (current: UserProfile) => UserProfile) {
     setPartnerProfile((current) => updater(current));
   }
 
-  const myComplete = isProfileComplete(myProfile);
+  const myComplete = isProfileComplete(myProfileForWizard);
   const partnerComplete = isProfileComplete(partnerProfile);
 
   function handleCompare() {
@@ -69,6 +85,7 @@ export default function CompatibilityAnalyzer() {
   function handleReset() {
     setResult(null);
     setPartnerProfile(emptyProfile());
+    setMyProfileDraft(emptyProfile());
     setResetCount((count) => count + 1);
   }
 
@@ -113,7 +130,7 @@ export default function CompatibilityAnalyzer() {
               저장된 프로필을 불러왔습니다. (MBTI·사주·관상·성명학 모두 완료)
             </p>
           ) : (
-            <PersonInputWizard key={resetCount} profile={myProfile} updateProfile={updateMyProfile} />
+            <PersonInputWizard key={resetCount} profile={myProfileForWizard} updateProfile={updateMyProfile} />
           )}
         </section>
 
